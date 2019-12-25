@@ -132,7 +132,7 @@ static void vdnssearch_free(const char **argv) {
 }
 
 #define NTOP_BUFSIZE 128
-static void verbose_configuration(struct SlirpConfig *cfg) {
+static void verbose_configuration(SlirpConfig *cfg) {
 	char buf[NTOP_BUFSIZE];
 	fprintf(stderr, "SLIRP configuration\n");
 	fprintf(stderr, "version       %d\n", cfg->version);
@@ -167,7 +167,7 @@ static void verbose_configuration(struct SlirpConfig *cfg) {
 
 static VDECONN *vde_slirp_open(char *sockname, char *descr,int interface_version,
 		struct vde_open_args *open_args) {
-	struct SlirpConfig cfg;
+	SlirpConfig cfg;
 	struct vde_slirp_conn *newconn = NULL;
 	char *restricted = NULL;
 	char *v4str = NULL;
@@ -196,7 +196,9 @@ static VDECONN *vde_slirp_open(char *sockname, char *descr,int interface_version
 		{"restricted", &restricted},
 		{"v4", &v4str},
 		{"v6", &v6str},
+		{"host", &host4},
 		{"addr", &host4},
+		{"host6", &host6},
 		{"addr6", &host6},
 		{"hostname", &vhostname},
 		{"tftp_server_name", &tftp_server_name},
