@@ -23,6 +23,17 @@ $ sudo make install
 
 ## usage examples (tutorial)
 
+### create a vde namespaces connected to the Internet by slirp
+
+```
+vdens -R 10.0.2.3 slirp://
+```
+
+Inside the namespace the ip address can be defined by hand or using a dhcp client. e.g.:
+```
+/sbin/udhcpc -i vde0
+```
+
 ### connect a vxvde network to the Internet using slirp
 
 ```

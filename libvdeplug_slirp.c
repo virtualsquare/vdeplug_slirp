@@ -160,7 +160,7 @@ static void verbose_configuration(SlirpConfig *cfg) {
 	fprintf(stderr, "\n");
 	fprintf(stderr, "vdomainname   %s\n", cfg->vdomainname);
 	fprintf(stderr, "MTU(0=def)    %d\n", cfg->if_mtu);
-	fprintf(stderr, "MTU(0=def)    %d\n", cfg->if_mru);
+	fprintf(stderr, "MRU(0=def)    %d\n", cfg->if_mru);
 	fprintf(stderr, "disable-lback %d\n", cfg->disable_host_loopback);
 	fprintf(stderr, "enable-emu    %d\n", cfg->enable_emu);
 }
