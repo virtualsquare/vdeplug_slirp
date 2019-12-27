@@ -31,9 +31,10 @@
 #include <sys/socket.h>
 #include <netdb.h>
 #include <arpa/inet.h>
+#define NTOP_BUFSIZE 128
 
 static VDECONN *vde_slirp_open(char *sockname, char *descr,int interface_version,
-    struct vde_open_args *open_args);
+		struct vde_open_args *open_args);
 static ssize_t vde_slirp_recv(VDECONN *conn,void *buf,size_t len,int flags);
 static ssize_t vde_slirp_send(VDECONN *conn,const void *buf,size_t len,int flags);
 static int vde_slirp_datafd(VDECONN *conn);
@@ -41,49 +42,55 @@ static int vde_slirp_ctlfd(VDECONN *conn);
 static int vde_slirp_close(VDECONN *conn);
 
 struct vdeplug_module vdeplug_ops={
-  .vde_open_real=vde_slirp_open,
-  .vde_recv=vde_slirp_recv,
-  .vde_send=vde_slirp_send,
-  .vde_datafd=vde_slirp_datafd,
-  .vde_ctlfd=vde_slirp_ctlfd,
-  .vde_close=vde_slirp_close
+	.vde_open_real=vde_slirp_open,
+	.vde_recv=vde_slirp_recv,
+	.vde_send=vde_slirp_send,
+	.vde_datafd=vde_slirp_datafd,
+	.vde_ctlfd=vde_slirp_ctlfd,
+	.vde_close=vde_slirp_close
 };
 
 struct vde_slirp_conn {
-  void *handle;
-  struct vdeplug_module *module;
+	void *handle;
+	struct vdeplug_module *module;
 
-  struct vdeslirp *slirp;
+	struct vdeslirp *slirp;
 };
 
-static void vde_slirp_dofwd(struct vdeslirp *slirp, int is_udp, char *arg) {
+static void vde_slirp_dofwd(struct vdeslirp *slirp, int is_udp, char *arg, int verbose) {
 	char *toktmp;
 	char *fwditem;
-  while ((fwditem = strtok_r(arg, ",", &toktmp)) != NULL) {
-    char *fldtmp;
-    char *haddrstr, *hport, *gaddrstr, *gport;
-    struct in_addr host_addr, guest_addr;
-    arg = NULL;
+	while ((fwditem = strtok_r(arg, ",", &toktmp)) != NULL) {
+		char *fldtmp;
+		char *haddrstr, *hport, *gaddrstr, *gport;
+		struct in_addr host_addr, guest_addr;
+		arg = NULL;
 
-    haddrstr = strtok_r(fwditem, ":", &fldtmp);
-    hport = strtok_r(NULL, ":", &fldtmp);
-    gaddrstr = strtok_r(NULL, ":", &fldtmp);
-    gport = strtok_r(NULL, ":", &fldtmp);
-    if (gport == NULL) {
-      gport = gaddrstr;
-      gaddrstr = hport;
-      hport = haddrstr;
-      haddrstr = "0.0.0.0";
-    }
-    if (inet_pton(AF_INET, haddrstr, &host_addr) == 1 &&
-        inet_pton(AF_INET, gaddrstr, &guest_addr) == 1)
-      vdeslirp_add_fwd(slirp, is_udp,
-          host_addr, atoi(hport),
-          guest_addr, atoi(gport));
-  }
+		haddrstr = strtok_r(fwditem, ":", &fldtmp);
+		hport = strtok_r(NULL, ":", &fldtmp);
+		gaddrstr = strtok_r(NULL, ":", &fldtmp);
+		gport = strtok_r(NULL, "", &fldtmp);
+		if (gport == NULL) {
+			gport = gaddrstr;
+			gaddrstr = hport;
+			hport = haddrstr;
+			haddrstr = "0.0.0.0";
+		}
+		if (inet_pton(AF_INET, haddrstr, &host_addr) == 1 &&
+				inet_pton(AF_INET, gaddrstr, &guest_addr) == 1) {
+			int retvalue = vdeslirp_add_fwd(slirp, is_udp,
+					host_addr, atoi(hport),
+					guest_addr, atoi(gport));
+			if (verbose) {
+				fprintf(stderr, "%sfwd host   %s %d -> guest %s %d: %s\n",
+						is_udp ? "udp" : "tcp",
+						haddrstr, atoi(hport), guest_addr, atoi(gport), strerror(retvalue == 0 ? 0 : errno));
+			}
+		}
+	}
 }
 
-static void vde_slirp_dounixfwd(struct vdeslirp *slirp, char *arg) {
+static void vde_slirp_dounixfwd(struct vdeslirp *slirp, char *arg, int verbose) {
 	char *toktmp;
 	char *fwditem;
 	while ((fwditem = strtok_r(arg, ",", &toktmp)) != NULL) {
@@ -94,34 +101,67 @@ static void vde_slirp_dounixfwd(struct vdeslirp *slirp, char *arg) {
 
 		haddrstr = strtok_r(fwditem, ":", &fldtmp);
 		hport = strtok_r(NULL, ":", &fldtmp);
-		path = strtok_r(NULL, ":", &fldtmp);
+		path = strtok_r(NULL, "", &fldtmp);
 		if (path == NULL) {
 			path = hport;
 			hport = haddrstr;
 			haddrstr = "0.0.0.0";
 		}
 		if (inet_pton(AF_INET, haddrstr, &host_addr) == 1 &&
-				path != 0)
-			vdeslirp_add_unixfwd(slirp, host_addr, atoi(hport), path);
+				path != 0) {
+			int retvalue = vdeslirp_add_unixfwd(slirp, host_addr, atoi(hport), path);
+			if (verbose) {
+				fprintf(stderr, "unixfwd       host %s %d -> guest %s: %s\n",
+						haddrstr, atoi(hport), path, strerror(retvalue == 0 ? 0 : errno));
+			}
+		}
+	}
+}
+
+static void vde_slirp_docmdfwd(struct vdeslirp *slirp, char *arg, int verbose) {
+	char *toktmp;
+	char *fwditem;
+	while ((fwditem = strtok_r(arg, ",", &toktmp)) != NULL) {
+		char *fldtmp;
+		char *haddrstr, *hport, *cmd;
+		struct in_addr host_addr;
+		arg = NULL;
+
+		haddrstr = strtok_r(fwditem, ":", &fldtmp);
+		hport = strtok_r(NULL, ":", &fldtmp);
+		cmd = strtok_r(NULL, "", &fldtmp);
+		if (cmd == NULL) {
+			cmd = hport;
+			hport = haddrstr;
+			haddrstr = "0.0.0.0";
+		}
+		if (inet_pton(AF_INET, haddrstr, &host_addr) == 1 &&
+				cmd != 0) {
+			int retvalue = vdeslirp_add_cmdexec(slirp, cmd, host_addr, atoi(hport));
+			if (verbose) {
+				fprintf(stderr, "cmdfwd        host %s %d -> '%s': %s\n",
+						haddrstr, atoi(hport), cmd, strerror(retvalue == 0 ? 0 : errno));
+			}
+		}
 	}
 }
 
 static const char **vdnssearch_copy(char *list) {
-  const char **retval = NULL;
-  int i, count;
-  if (list == NULL)
-    return NULL;
-  for (i = 0, count = 2; list[i] != 0; i++)
-    count += (list[i] == ',');
-  retval = malloc(count * sizeof(char *));
-  if (retval != NULL) {
-    const char **scan = retval;;
-    char *toktmp, *item;
-    for (; (item = strtok_r(list, ",", &toktmp)) != NULL; list = NULL)
-      *scan++ = strdup(item);
-    *scan = NULL;
-  }
-  return retval;
+	const char **retval = NULL;
+	int i, count;
+	if (list == NULL)
+		return NULL;
+	for (i = 0, count = 2; list[i] != 0; i++)
+		count += (list[i] == ',');
+	retval = malloc(count * sizeof(char *));
+	if (retval != NULL) {
+		const char **scan = retval;;
+		char *toktmp, *item;
+		for (; (item = strtok_r(list, ",", &toktmp)) != NULL; list = NULL)
+			*scan++ = strdup(item);
+		*scan = NULL;
+	}
+	return retval;
 }
 
 static void vdnssearch_free(const char **argv) {
@@ -131,7 +171,6 @@ static void vdnssearch_free(const char **argv) {
 	free(argv);
 }
 
-#define NTOP_BUFSIZE 128
 static void verbose_configuration(SlirpConfig *cfg) {
 	char buf[NTOP_BUFSIZE];
 	fprintf(stderr, "SLIRP configuration\n");
@@ -189,6 +228,7 @@ static VDECONN *vde_slirp_open(char *sockname, char *descr,int interface_version
 	char *tcpfwd = NULL;
 	char *udpfwd = NULL;
 	char *unixfwd = NULL;
+	char *cmdfwd = NULL;
 	char *verbose = NULL;
 	struct addrinfo hints;
 	struct addrinfo *result;
@@ -215,6 +255,7 @@ static VDECONN *vde_slirp_open(char *sockname, char *descr,int interface_version
 		{"tcpfwd", &tcpfwd},
 		{"udpfwd", &udpfwd},
 		{"unixfwd", &unixfwd},
+		{"cmdfwd", &cmdfwd},
 		{"verbose", &verbose},
 		{NULL, NULL}};
 	memset(&hints, 0, sizeof(struct addrinfo));
@@ -268,11 +309,13 @@ static VDECONN *vde_slirp_open(char *sockname, char *descr,int interface_version
 			vdeslirp_close(slirp);
 		} else {
 			if (tcpfwd)
-				vde_slirp_dofwd(slirp, 0, tcpfwd);
+				vde_slirp_dofwd(slirp, 0, tcpfwd, !!verbose);
 			if (udpfwd)
-				vde_slirp_dofwd(slirp, 1, udpfwd);
+				vde_slirp_dofwd(slirp, 1, udpfwd, !!verbose);
 			if (unixfwd)
-				vde_slirp_dounixfwd(slirp, unixfwd);
+				vde_slirp_dounixfwd(slirp, unixfwd, !!verbose);
+			if (cmdfwd)
+				vde_slirp_docmdfwd(slirp, cmdfwd, !!verbose);
 			if (cfg.vdnssearch != NULL) 
 				vdnssearch_free(cfg.vdnssearch);
 			newconn->slirp = slirp;
