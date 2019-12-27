@@ -80,14 +80,17 @@ define the MRU
 \fBdisable_host_loopback\fR
 disable loopback
 .TP
-\fBtcpfwd\fR=[\fIhostIP\fR\fB:\fR]\fIhostport\fR\fB:\fR\fIguestIP\fR\fB:\fR\fIguestport\fR\fB,\fR[\fIhostIP\fR\fB:\fR]\fIhostport\fR\fB:\fR\fIguestIP\fR\fB:\fR\fIguestport\fR]\|\.\|\.\|\.
-define TCP port(s) forwarding\.
+\fBtcpfwd\fR=[\fIhostIP\fR\fB:\fR]\fIhostport\fR\fB:\fR\fIguestIP\fR\fB:\fR\fIguestport\fR\fB[,\fR[\fIhostIP\fR\fB:\fR]\fIhostport\fR\fB:\fR\fIguestIP\fR\fB:\fR\fIguestport\fR]\|\.\|\.\|\.]
+forward TCP port(s)\.
 .TP
-\fBudpfwd\fR=[\fIhostIP\fR\fB:\fR]\fIhostport\fR\fB:\fR\fIguestIP\fR\fB:\fR\fIguestport\fR\fB,\fR[\fIhostIP\fR\fB:\fR]\fIhostport\fR\fB:\fR\fIguestIP\fR\fB:\fR\fIguestport\fR]\|\.\|\.\|\.
-define UDP port(s) forwarding\.
+\fBudpfwd\fR=[\fIhostIP\fR\fB:\fR]\fIhostport\fR\fB:\fR\fIguestIP\fR\fB:\fR\fIguestport\fR\fB[,\fR[\fIhostIP\fR\fB:\fR]\fIhostport\fR\fB:\fR\fIguestIP\fR\fB:\fR\fIguestport\fR]\|\.\|\.\|\.]
+forward UDP port(s)\.
 .TP
-\fBunixfwd\fR=[\fIslirpIP\fR\fB:\fR]\fIslirpport\fR\fB:\fR\fIpath\fR\fB,\fR[\fIslirpIP\fR\fB:\fR]\fIslirpport\fR\fB:\fR\fIpath\fR\|\.\|\.\|\.
-define forwarding of one or more port (from the virtual network) to a PF_UNIX path (commoly used to forward ports to a X server) \fIstill unsupported by libslirp\fR
+\fBunixfwd\fR=[\fIslirpIP\fR\fB:\fR]\fIslirpport\fR\fB:\fR\fIpath\fR\fB[,\fR[\fIslirpIP\fR\fB:\fR]\fIslirpport\fR\fB:\fR\fIpath\fR\|\.\|\.\|\.]
+forward TCP port(s) (from the virtual network) to PF_UNIX socket(s) (commonly used to forward ports to a X server) \fIstill unsupported by libslirp\fR\.
+.TP
+\fBcmdfwd\fR=[\fIslirpIP\fR\fB:\fR]\fIslirpport\fR\fB:\fR\fIcmd\fR\fB[,\fR[\fIslirpIP\fR\fB:\fR]\fIslirpport\fR\fB:\fR\fIpath\fR\|\.\|\.\|\.]
+forward TCP port(s) (from the virtual network) to external command(s)\.
 .TP
 \fBverbose\fR
 print a table of slirp service configuration\.
@@ -105,6 +108,10 @@ When a program uses the following vde_plug_url:
 \fBslirp:///tcpfwd=8080:10\.0\.2\.15:80\fR
 .P
 tcp connections to the host computer port 8080 (any interface) are forwarded to 10\.0\.2\.15 port 80
+.P
+\fBslirp:///tcpfwd=8080:10\.0\.2\.15:80/cmdfwd=10\.0\.2\.5:6000:\'socat STDIO UNIX:"/tmp/\.X11\-unix/X0"\'\fR
+.P
+like the previous one plus this uses socat to forward all X\-windows requests to 10\.0\.2\.5:0 (port 6000) to the local server of the display \fB:0\fR\.
 .SH "NOTICE"
 Virtual Distributed Ethernet is not related in any way with www\.vde\.com ("Verband der Elektrotechnik, Elektronik und Informationstechnik" i\.e\. the German "Association for Electrical, Electronic & Information Technologies")\.
 .SH "SEE ALSO"

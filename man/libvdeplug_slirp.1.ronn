@@ -88,15 +88,18 @@ slirp://[/OPTION][/OPTION]
   * `disable_host_loopback`:
     disable loopback
 
-  * `tcpfwd`=[_hostIP_`:`]_hostport_`:`_guestIP_`:`_guestport_`,`[_hostIP_`:`]_hostport_`:`_guestIP_`:`_guestport_]...:
-    define TCP port(s) forwarding.
+  * `tcpfwd`=[_hostIP_`:`]_hostport_`:`_guestIP_`:`_guestport_`[,`[_hostIP_`:`]_hostport_`:`_guestIP_`:`_guestport_]...]:
+    forward TCP port(s).
 
-  * `udpfwd`=[_hostIP_`:`]_hostport_`:`_guestIP_`:`_guestport_`,`[_hostIP_`:`]_hostport_`:`_guestIP_`:`_guestport_]...:
-    define UDP port(s) forwarding.
+  * `udpfwd`=[_hostIP_`:`]_hostport_`:`_guestIP_`:`_guestport_`[,`[_hostIP_`:`]_hostport_`:`_guestIP_`:`_guestport_]...]:
+    forward UDP port(s).
 
-  * `unixfwd`=[_slirpIP_`:`]_slirpport_`:`_path_`,`[_slirpIP_`:`]_slirpport_`:`_path_...:
-    define  forwarding of one or more port (from the virtual network) to a PF_UNIX path (commoly used to forward
-    ports to a X server) *still unsupported by libslirp*
+  * `unixfwd`=[_slirpIP_`:`]_slirpport_`:`_path_`[,`[_slirpIP_`:`]_slirpport_`:`_path_...]:
+    forward TCP port(s) (from the virtual network) to PF_UNIX socket(s) (commonly used to forward
+    ports to a X server) *still unsupported by libslirp*.
+
+  * `cmdfwd`=[_slirpIP_`:`]_slirpport_`:`_cmd_`[,`[_slirpIP_`:`]_slirpport_`:`_path_...]:
+    forward TCP port(s) (from the virtual network) to external command(s).
 
   * `verbose`:
     print a table of slirp service configuration.
@@ -117,6 +120,10 @@ When a program uses the following vde_plug_url:
 
 tcp connections to the host computer port 8080 (any interface) are forwarded to 10.0.2.15  port  80
 
+`slirp:///tcpfwd=8080:10.0.2.15:80/cmdfwd=10.0.2.5:6000:'socat STDIO UNIX:"/tmp/.X11-unix/X0"'`
+
+like the previous one plus this uses socat to forward all X-windows requests to 10.0.2.5:0 (port 6000)
+to the local server of the display `:0`.
 
 ## NOTICE
 Virtual  Distributed  Ethernet  is not related in any way with www.vde.com ("Verband der Elektrotechnik, Elektronik
