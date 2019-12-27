@@ -137,10 +137,12 @@ static void vde_slirp_docmdfwd(struct vdeslirp *slirp, char *arg, int verbose) {
 		}
 		if (inet_pton(AF_INET, haddrstr, &host_addr) == 1 &&
 				cmd != 0) {
-			int retvalue = vdeslirp_add_cmdexec(slirp, cmd, host_addr, atoi(hport));
+			int retvalue = vdeslirp_add_cmdexec(slirp, cmd, &host_addr, atoi(hport));
 			if (verbose) {
+				char buf[NTOP_BUFSIZE];
 				fprintf(stderr, "cmdfwd        host %s %d -> '%s': %s\n",
-						haddrstr, atoi(hport), cmd, strerror(retvalue == 0 ? 0 : errno));
+						inet_ntop(AF_INET, &host_addr, buf, NTOP_BUFSIZE)	, 
+						atoi(hport), cmd, strerror(retvalue == 0 ? 0 : errno));
 			}
 		}
 	}
