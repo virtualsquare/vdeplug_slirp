@@ -57,6 +57,19 @@ struct vde_slirp_conn {
 	struct vdeslirp *slirp;
 };
 
+/* like strtok_r but this allows empty fields */
+static char *strtok_rep_r (char *s, const char *delim, char **save_ptr)
+{
+  char *end;
+  if (s == NULL) s = *save_ptr;
+  if (*s == '\0')
+    return *save_ptr = s, NULL;
+  end = s + strcspn (s, delim);
+  if (*end == '\0')
+    return *save_ptr = end, s;
+  return *end = '\0', *save_ptr = end + 1, s;
+}
+
 static void vde_slirp_dofwd(struct vdeslirp *slirp, int is_udp, char *arg, int verbose) {
 	char *toktmp;
 	char *fwditem;
@@ -66,16 +79,18 @@ static void vde_slirp_dofwd(struct vdeslirp *slirp, int is_udp, char *arg, int v
 		struct in_addr host_addr, guest_addr;
 		arg = NULL;
 
-		haddrstr = strtok_r(fwditem, ":", &fldtmp);
-		hport = strtok_r(NULL, ":", &fldtmp);
-		gaddrstr = strtok_r(NULL, ":", &fldtmp);
-		gport = strtok_r(NULL, "", &fldtmp);
+		haddrstr = strtok_rep_r(fwditem, ":", &fldtmp);
+		hport = strtok_rep_r(NULL, ":", &fldtmp);
+		gaddrstr = strtok_rep_r(NULL, ":", &fldtmp);
+		gport = strtok_rep_r(NULL, "", &fldtmp);
 		if (gport == NULL) {
 			gport = gaddrstr;
 			gaddrstr = hport;
 			hport = haddrstr;
 			haddrstr = "0.0.0.0";
 		}
+		if (*haddrstr == 0)
+			haddrstr = "0.0.0.0";
 		if (inet_pton(AF_INET, haddrstr, &host_addr) == 1 &&
 				inet_pton(AF_INET, gaddrstr, &guest_addr) == 1) {
 			int retvalue = vdeslirp_add_fwd(slirp, is_udp,
@@ -99,20 +114,24 @@ static void vde_slirp_dounixfwd(struct vdeslirp *slirp, char *arg, int verbose) 
 		struct in_addr host_addr;
 		arg = NULL;
 
-		haddrstr = strtok_r(fwditem, ":", &fldtmp);
-		hport = strtok_r(NULL, ":", &fldtmp);
-		path = strtok_r(NULL, "", &fldtmp);
+		haddrstr = strtok_rep_r(fwditem, ":", &fldtmp);
+		hport = strtok_rep_r(NULL, ":", &fldtmp);
+		path = strtok_rep_r(NULL, "", &fldtmp);
 		if (path == NULL) {
 			path = hport;
 			hport = haddrstr;
 			haddrstr = "0.0.0.0";
 		}
+		if (*haddrstr == 0)
+			haddrstr = "0.0.0.0";
 		if (inet_pton(AF_INET, haddrstr, &host_addr) == 1 &&
 				path != 0) {
-			int retvalue = vdeslirp_add_unixfwd(slirp, host_addr, atoi(hport), path);
+			int retvalue = vdeslirp_add_unixfwd(slirp, path, &host_addr, atoi(hport));
 			if (verbose) {
-				fprintf(stderr, "unixfwd       host %s %d -> guest %s: %s\n",
-						haddrstr, atoi(hport), path, strerror(retvalue == 0 ? 0 : errno));
+				char buf[NTOP_BUFSIZE];
+				fprintf(stderr, "unixfwd       gw %s %d -> host %s: %s\n",
+						inet_ntop(AF_INET, &host_addr, buf, NTOP_BUFSIZE),
+						atoi(hport), path, strerror(retvalue == 0 ? 0 : errno));
 			}
 		}
 	}
@@ -127,20 +146,22 @@ static void vde_slirp_docmdfwd(struct vdeslirp *slirp, char *arg, int verbose) {
 		struct in_addr host_addr;
 		arg = NULL;
 
-		haddrstr = strtok_r(fwditem, ":", &fldtmp);
-		hport = strtok_r(NULL, ":", &fldtmp);
-		cmd = strtok_r(NULL, "", &fldtmp);
+		haddrstr = strtok_rep_r(fwditem, ":", &fldtmp);
+		hport = strtok_rep_r(NULL, ":", &fldtmp);
+		cmd = strtok_rep_r(NULL, "", &fldtmp);
 		if (cmd == NULL) {
 			cmd = hport;
 			hport = haddrstr;
 			haddrstr = "0.0.0.0";
 		}
+		if (*haddrstr == 0)
+			haddrstr = "0.0.0.0";
 		if (inet_pton(AF_INET, haddrstr, &host_addr) == 1 &&
 				cmd != 0) {
 			int retvalue = vdeslirp_add_cmdexec(slirp, cmd, &host_addr, atoi(hport));
 			if (verbose) {
 				char buf[NTOP_BUFSIZE];
-				fprintf(stderr, "cmdfwd        host %s %d -> '%s': %s\n",
+				fprintf(stderr, "cmdfwd        gw %s %d -> '%s': %s\n",
 						inet_ntop(AF_INET, &host_addr, buf, NTOP_BUFSIZE)	, 
 						atoi(hport), cmd, strerror(retvalue == 0 ? 0 : errno));
 			}
