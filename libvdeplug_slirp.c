@@ -99,7 +99,7 @@ static void vde_slirp_dofwd(struct vdeslirp *slirp, int is_udp, char *arg, int v
 			if (verbose) {
 				fprintf(stderr, "%sfwd host   %s %d -> guest %s %d: %s\n",
 						is_udp ? "udp" : "tcp",
-						haddrstr, atoi(hport), guest_addr, atoi(gport), strerror(retvalue == 0 ? 0 : errno));
+						haddrstr, atoi(hport), gaddrstr, atoi(gport), strerror(retvalue == 0 ? 0 : errno));
 			}
 		}
 	}
