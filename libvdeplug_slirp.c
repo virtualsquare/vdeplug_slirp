@@ -29,14 +29,13 @@
 #include <slirp/libvdeslirp.h>
 #include <sys/types.h>
 #include <sys/socket.h>
-#include <netdb.h>
 #include <arpa/inet.h>
 #define NTOP_BUFSIZE 128
 
-static VDECONN *vde_slirp_open(char *sockname, char *descr,int interface_version,
+static VDECONN *vde_slirp_open(char *sockname, char *descr, int interface_version,
 		struct vde_open_args *open_args);
-static ssize_t vde_slirp_recv(VDECONN *conn,void *buf,size_t len,int flags);
-static ssize_t vde_slirp_send(VDECONN *conn,const void *buf,size_t len,int flags);
+static ssize_t vde_slirp_recv(VDECONN *conn, void *buf, size_t len, int flags);
+static ssize_t vde_slirp_send(VDECONN *conn, const void *buf, size_t len, int flags);
 static int vde_slirp_datafd(VDECONN *conn);
 static int vde_slirp_ctlfd(VDECONN *conn);
 static int vde_slirp_close(VDECONN *conn);
@@ -221,16 +220,18 @@ static void verbose_configuration(SlirpConfig *cfg) {
 	}
 	fprintf(stderr, "\n");
 	fprintf(stderr, "vdomainname   %s\n", cfg->vdomainname);
-	fprintf(stderr, "MTU(0=def)    %d\n", cfg->if_mtu);
-	fprintf(stderr, "MRU(0=def)    %d\n", cfg->if_mru);
+	fprintf(stderr, "MTU(0=def)    %zd\n", cfg->if_mtu);
+	fprintf(stderr, "MRU(0=def)    %zd\n", cfg->if_mru);
 	fprintf(stderr, "disable-lback %d\n", cfg->disable_host_loopback);
 	fprintf(stderr, "enable-emu    %d\n", cfg->enable_emu);
 }
 
-static VDECONN *vde_slirp_open(char *sockname, char *descr,int interface_version,
+static VDECONN *vde_slirp_open(char *sockname, char *descr, int interface_version,
 		struct vde_open_args *open_args) {
+	(void) descr;
+	(void) interface_version;
+	(void) open_args;
 	SlirpConfig cfg;
-	struct vde_slirp_conn *newconn = NULL;
 	char *restricted = NULL;
 	char *v4str = NULL;
 	char *v6str = NULL;
@@ -253,8 +254,6 @@ static VDECONN *vde_slirp_open(char *sockname, char *descr,int interface_version
 	char *unixfwd = NULL;
 	char *cmdfwd = NULL;
 	char *verbose = NULL;
-	struct addrinfo hints;
-	struct addrinfo *result;
 	struct vdeparms parms[] = {
 		{"restricted", &restricted},
 		{"v4", &v4str},
@@ -281,7 +280,6 @@ static VDECONN *vde_slirp_open(char *sockname, char *descr,int interface_version
 		{"cmdfwd", &cmdfwd},
 		{"verbose", &verbose},
 		{NULL, NULL}};
-	memset(&hints, 0, sizeof(struct addrinfo));
 	if (vde_parseparms(sockname, parms) != 0)
 		return NULL;
 
@@ -348,12 +346,14 @@ static VDECONN *vde_slirp_open(char *sockname, char *descr,int interface_version
 	return NULL;
 }
 
-static ssize_t vde_slirp_recv(VDECONN *conn,void *buf,size_t len,int flags) {
+static ssize_t vde_slirp_recv(VDECONN *conn, void *buf, size_t len, int flags) {
+	(void) flags;
 	struct vde_slirp_conn *vde_conn = (struct vde_slirp_conn *)conn;
 	return vdeslirp_recv(vde_conn->slirp, buf, len);
 }
 
-static ssize_t vde_slirp_send(VDECONN *conn,const void *buf,size_t len,int flags) {
+static ssize_t vde_slirp_send(VDECONN *conn, const void *buf, size_t len, int flags) {
+	(void) flags;
 	struct vde_slirp_conn *vde_conn = (struct vde_slirp_conn *)conn;
 	return vdeslirp_send(vde_conn->slirp, buf, len);
 }
@@ -364,6 +364,7 @@ static int vde_slirp_datafd(VDECONN *conn) {
 }
 
 static int vde_slirp_ctlfd(VDECONN *conn) {
+	(void) conn;
 	return -1;
 }
 

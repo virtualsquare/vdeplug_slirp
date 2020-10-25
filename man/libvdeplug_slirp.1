@@ -20,9 +20,9 @@
 .\" Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston,
 .\" MA 02110-1301 USA.
 .\"
-.\" generated with Ronn-NG/v0.8.0
-.\" http://github.com/apjanke/ronn-ng/tree/0.8.0
-.TH "LIBVDEPLUG_SLIRP" "1" "December 2019" "VirtualSquare"
+.\" generated with Ronn-NG/v0.10.0
+.\" http://github.com/apjanke/ronn-ng/tree/0.10.0-SNAPSHOT
+.TH "LIBVDEPLUG_SLIRP" "1" "October 2020" "VirtualSquare"
 .SH "NAME"
 \fBlibvdeplug_slirp\fR \- slirp vdeplug module
 .SH "SYNOPSIS"
@@ -109,7 +109,7 @@ When a program uses the following vde_plug_url:
 .P
 tcp connections to the host computer port 8080 (any interface) are forwarded to 10\.0\.2\.15 port 80
 .P
-\fBslirp:///tcpfwd=8080:10\.0\.2\.15:80/cmdfwd=10\.0\.2\.5:6000:\'socat STDIO UNIX:"/tmp/\.X11\-unix/X0"\'\fR
+\fBslirp:///tcpfwd=8080:10\.0\.2\.15:80/cmdfwd=10\.0\.2\.5:6000:'socat STDIO UNIX:"/tmp/\.X11\-unix/X0"'\fR
 .P
 like the previous one plus this uses socat to forward all X\-windows requests to 10\.0\.2\.5:0 (port 6000) to the local server of the display \fB:0\fR\.
 .SH "NOTICE"
