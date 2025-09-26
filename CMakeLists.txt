@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.13)
+cmake_minimum_required(VERSION 3.25)
 project("vdeplug_slirp"
     DESCRIPTION "libvdeplug plugin module for slirp"
     HOMEPAGE_URL "https://github.com/rd235/vdeplug_slirp"
